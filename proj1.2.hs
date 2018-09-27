@@ -13,7 +13,7 @@ main = do
     let g = preencheGraph e c    
     putStr(" \n \n")
     print(g)
-    print(achaNoPartida "c" g)
+    print(head(tail (tail (tail (tail g)))))
     
 getLines :: IO [String]
 getLines = lines <$> getContents
@@ -54,15 +54,6 @@ preenche'' (x:xs) l e = e ++ preenche'' xs l [(x,m)]
     where m = (map (\[a,b]-> (a,(read(b)::Double))) b)
           b = (mapedTail) c
           c = (encontra x l)
-
-achaNoPartida :: String->Graph->(Node,[Edge])
-achaNoPartida _ [] = ("",[])
-achaNoPartida n (h:t)
-          | n == (nomeNo h) = h
-          | otherwise = achaNoPartida n t
-
-nomeNo :: (Node,[Edge]) -> String
-nomeNo n = fst n
           
 
 

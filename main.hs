@@ -1,5 +1,3 @@
-import System.IO  
-import Control.Monad
 
 main = do
     contents <- getLines  --le a entrada como um bloco
@@ -12,8 +10,11 @@ main = do
     putStr(" \n \n")    
     let g = preencheGraph e c    
     putStr(" \n \n")
-    print(g)
-    print(achaNoPartida "c" g)
+    mapM_  print(g)
+    putStrLn "\tEdges:"
+    mapM_ print(map snd g)
+    putStrLn "\n"
+    print(achaNoPartida "f" g)
     
 getLines :: IO [String]
 getLines = lines <$> getContents
@@ -46,9 +47,10 @@ preenche' (x:xs) l g = g ++ preenche' xs l [(x,preencheEdge a b )]
           c = (encontra x l)
         
              
-preenche'' :: [String]->[[String]] -> [Edge]->[Edge] 
 preencheEdge :: [String] -> [[String]] -> [Edge]    
-preencheEdge n l = preenche'' n l [] 
+preencheEdge n l = preenche'' n l []
+
+preenche'' :: [String]->[[String]] -> [Edge]->[Edge] 
 preenche'' [] l e = e
 preenche'' (x:xs) l e = e ++ preenche'' xs l [(x,m)] 
     where m = (map (\[a,b]-> (a,(read(b)::Double))) b)
@@ -63,8 +65,6 @@ achaNoPartida n (h:t)
 
 nomeNo :: (Node,[Edge]) -> String
 nomeNo n = fst n
-          
-
 
 type Edge = (Node,Meio) 
 type Node = String

@@ -2,7 +2,8 @@
 main = do
     contents <- getLines  --le a entrada como um bloco
     let b = parseLines contents       -- cada linha uma string em uma lista      
-    let c = parseWords(head  b)       -- cada linha uma lista de string
+    let c = parseWords(head  b)     -- cada linha uma lista de string
+    let bus = parseWords(head $ tail b)   
     let a = (encontra (head $ head $ c) c) 
     let d = mapedTail a 
     let e = unico $ mapedHead c -- lista com o primeiro elemento de cada sublista, sem repeticao
@@ -14,7 +15,8 @@ main = do
     putStrLn "\tEdges:"
     mapM_ print(map snd g)
     putStrLn "\n"
-    print(achaNoPartida "f" g)
+    print(achaNoPartida "y" g)
+    mapM_ print (getEdges $ achaNoPartida "f" g)
     
 getLines :: IO [String]
 getLines = lines <$> getContents
@@ -65,6 +67,9 @@ achaNoPartida n (h:t)
 
 nomeNo :: (Node,[Edge]) -> String
 nomeNo n = fst n
+
+getEdges :: (Node,[Edge]) -> [Edge]
+getEdges n = snd n
 
 type Edge = (Node,Meio) 
 type Node = String

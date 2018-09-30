@@ -8,18 +8,18 @@ main = do
     let e = unico $ mapedHead c -- lista com o primeiro elemento de cada sublista, sem repeticao
     let f = unico $ mapedHead d
     let l = parseWords(head(tail b))
-    
-    putStr(" \n \n")    
+    let k = parseWords(head(tail(tail b)))
     let g = preencheGraph e c    
-    let h = criaPqueue e
+    let h = criaPqueue e "f"
+    let r = menorCaminho g h "a" "f" l
+    print(k)
+    putStr(" \n \n") 
+    print(g)
     putStr(" \n \n")
-    mapM_  print(g)
-    putStrLn "\tEdges:"
-    mapM_ print(map snd g)
-    putStrLn "\n"
-    print(achaNoPartida "f" g)
-    
-    print(criaPqueue e "a")
+    print(h)
+    putStr(" \n \n") 
+    print(r)
+    print(percorrePqueue r "f")
    
     
 getLines :: IO [String]
@@ -165,8 +165,8 @@ distOrigem n pq = (fst(snd(achaNo n pq)))
 percorrePqueue :: Pqueue -> String -> String      --nao implementada
 percorrePqueue pq v = percorrePqueue' pq pq v ""
 percorrePqueue' pq (x:xs) v s 
-    |(fst x) == v = percorrePqueue' pq  
-    |otherwise = percorrePqueue' 
+    |(fst x) == v = percorrePqueue' pq  pq (fst $ snd $ snd x) (s ++ (snd $ snd $ snd x )++ (fst x))
+    |otherwise = percorrePqueue' pq xs v s
      
 type Graph = [Node]
 type Node =(Nome, [Edge])

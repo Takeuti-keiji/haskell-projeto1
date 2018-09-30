@@ -80,25 +80,32 @@ criaPqueue (x:xs) v
     |x == v = (x,(0,("",""))):criaPqueue xs v
     |otherwise = (x,(-1,("",""))):criaPqueue xs v
 
-menorCaminho :: Graph ->Pqueue -> [Nome] -> Nome -> Nome -> (Pqueue,[Nome])
-menorCaminho g pq o d = menorCaminho'g pq [] [] o "a-pe" d
+menorCaminho :: Graph ->Pqueue -> Nome -> Nome -> Pqueue
+menorCaminho g pq o d = menorCaminho' g pq [] o "a-pe" d
 
-menorCaminho' :: Graph -> Pqueue -> [Nome] -> [Nome] -> Nome -> Nome -> Nome -> (Pqueue,[Nome])
-menorCaminho' g pq v t o m d 
-    |v == d = (pq,t)
+menorCaminho' :: Graph -> Pqueue -> [Nome] -> Nome -> Nome -> Nome -> Pqueue
+menorCaminho' g pq v o m d 
+    |o == d = pq
     |otherwise =
-        let pq' =  checaDist (snd achaNoPartida o g) pq m o
-            v'
-            t'
-            o'
-            m'
-        in menorCaminho' g pq' v' t' o' m' d
+        let pq' =  checaDist (snd (achaNoPartida o g)) pq m 
+            v' = o':v 
+            o' =fst t
+            m' = snd t
+            t = menorDist pq'
+        in menorCaminho' g pq' v' o' m' d
         
-checaDist :: [Edge] -> Pqueue ->  Nome -> Nome-> Pqueue   
+menorDist :: Pqueue -> (Nome,Nome)
+menorDist pq = menorDist' pq ("","")
+menorDist' (x:xs) ("","") = menorDist' xs (fst x,snd(snd(snd x)))
+menorDist' (x:xs) w
+    |fst(snd x) <  snd w =  menorDist' xs (fst x,snd(snd(snd x)))
+    |otherwise = menorDist' xs w 
+        
+checaDist :: [Edge] -> Pqueue ->  Nome -> Pqueue   
 checaDist [] pq _ _= pq
-checaDist (x:xs) pq m o 
-    |a >= b && b > 0 = checaDist xs pq m o
-    |otherwise =  checaDist xs (atualizaPq x pq a m ) m o
+checaDist (x:xs) pq m 
+    |a >= b && b >= 0 = checaDist xs pq m 
+    |otherwise =  checaDist xs (atualizaPq x pq a m ) m 
     where   
         a = (dist (snd x) pq m) + (distOrigem fst x pq)
         b =  fst (snd(achaNo (nomeNo x) pq))
@@ -112,22 +119,20 @@ achaNo n (h:t)
 atualizaPq :: Edge -> Pqueue -> Weight -> Pqueue
 atualizaPq _ [] _ = []
 atualizaPq e (x:xs) w 
-    |fst e == fst x = (fst e,(snd (snd e),(v,m))) ++ atualizaPq
-    |otherwise = x ++ atualizaPq 
+    |fst e == fst x = (fst e,(snd (snd e),(v,m))) ++ atualizaPq e xs w
+    |otherwise = x ++ atualizaPq e xs w
 
 dist :: [Meio] -> Pqueue -> Nome -> Pqueue
 dist e pq m o= dist' e pq m  (m,0)
 dist' [] pq m  r = r
-dist' (x:xs) pq m  (_,0) 
+dist' (x:xs) pq m  (_,0)
     |fst x == "a-pe" = dist' xs pq m x
-    |otherwise = if m /= fst x dist' xs pq m  (fst x,((snd x) + esperaBus fst x ))
-                    else
-                    dist' xs pq m x
+    | m /= fst x = dist' xs pq m  (fst x,((snd x) + esperaBus fst x ))
+    |otherwise = dist' xs pq m x
 dist' (x:xs) pq m r
-    |fst x == "a-pe" dist' xs pq m a 
-    |otherwise = if (m /= fst x) dist' xs pq m b
-    else dist' xs pq m a
-    
+    |fst x == "a-pe" = dist' xs pq m a 
+    | m /= fst x = dist' xs pq m b
+    |otherwise = dist' xs pq m a
     where
         a =maisRapido r x
         b =maisRapido r (fst x,((snd x) + esperaBus fst x ))
@@ -140,7 +145,7 @@ maisRapido a b
 esperaBus :: [[String]] -> String -> Double
 esperaBus (x:xs) s
     |fst x == s = ((snd x)/2)
-    |otherwise esperaBus xs s
+    |otherwise = esperaBus xs s
     
 distOrigem :: Nome -> Pqueue -> Weight
 distOrigem n pq = (fst(snd(achaNo n pq)))

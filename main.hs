@@ -7,8 +7,11 @@ main = do
     let d = mapedTail a 
     let e = unico $ mapedHead c -- lista com o primeiro elemento de cada sublista, sem repeticao
     let f = unico $ mapedHead d
+    let l = parseWords(head(tail b))
+    
     putStr(" \n \n")    
     let g = preencheGraph e c    
+    let h = criaPqueue e
     putStr(" \n \n")
     mapM_  print(g)
     putStrLn "\tEdges:"
@@ -17,6 +20,7 @@ main = do
     print(achaNoPartida "f" g)
     
     print(criaPqueue e "a")
+   
     
 getLines :: IO [String]
 getLines = lines <$> getContents
@@ -74,81 +78,95 @@ achaEdge n (h:t)
 nomeNo :: (a,b)-> a
 nomeNo n = fst n
 
-criaPqueue :: [String] -> String -> Pqueue
+criaPqueue :: [String] -> String -> Pqueue          --cria a fila de prioridade
 criaPqueue [] _ = []
 criaPqueue (x:xs) v 
     |x == v = (x,(0,("",""))):criaPqueue xs v
     |otherwise = (x,(-1,("",""))):criaPqueue xs v
 
-menorCaminho :: Graph ->Pqueue -> Nome -> Nome -> Pqueue
-menorCaminho g pq o d = menorCaminho' g pq [] o "a-pe" d
+menorCaminho :: Graph ->Pqueue -> Nome -> Nome ->[[String]]-> Pqueue     
+menorCaminho g pq o d l = menorCaminho' g pq [] o "a-pe" d l
 
-menorCaminho' :: Graph -> Pqueue -> [Nome] -> Nome -> Nome -> Nome -> Pqueue
-menorCaminho' g pq v o m d 
+menorCaminho' :: Graph -> Pqueue -> [Nome] -> Nome -> Nome -> Nome -> [[String]] -> Pqueue    -- acha o menor caminho recebe o grafo, a lista de prioridade inicializada, lista de visitados, um no , meio de transporte ate esse no e o destino
+menorCaminho' g pq v o m d l
     |o == d = pq
     |otherwise =
-        let pq' =  checaDist (snd (achaNoPartida o g)) pq m 
-            v' = o':v 
-            o' =fst t
-            m' = snd t
-            t = menorDist pq'
-        in menorCaminho' g pq' v' o' m' d
+        let pq' =  checaDist (snd (achaNoPartida o g)) pq m o l--atualiza a Pqueue com os vizinhos de o
+            v' = ([o'] ++ v)  --adiciona o aos visitados
+            o' =fst t  -- nome do menor no
+            m' = snd (snd(snd t)) --meio do menor no
+            t = menorDist pq' v -- acha o proximo no com menor distancia
+        in menorCaminho' g pq' v' o' m' d l
+               
+menorDist :: Pqueue -> [Nome] -> (Nome,Spec)                      --acha o menor no nao visitado na fila de prioridade
+menorDist pq v = menorDist' pq v ("",(0,("","")))
+
+menorDist' :: Pqueue -> [Nome] -> (Nome,Spec) -> (Nome,Spec) 
+menorDist' [] _ w = w
+menorDist' (x:xs) v ("",(0,("",""))) 
+    |(notElem (fst x) v) = menorDist' xs v x
+    |otherwise = menorDist' xs v ("",(0,("","")))
         
-menorDist :: Pqueue -> (Nome,Nome)
-menorDist pq = menorDist' pq ("","")
-menorDist' (x:xs) ("","") = menorDist' xs (fst x,snd(snd(snd x)))
-menorDist' (x:xs) w
-    |fst(snd x) <  snd w =  menorDist' xs (fst x,snd(snd(snd x)))
-    |otherwise = menorDist' xs w 
+menorDist' (x:xs) v w
+    |(fst(snd x) <  fst(snd w)) && (notElem (fst x) v) =  menorDist' xs v x
+    |otherwise = menorDist' xs v w 
         
-checaDist :: [Edge] -> Pqueue ->  Nome -> Pqueue   
-checaDist [] pq _ _= pq
-checaDist (x:xs) pq m 
-    |a >= b && b >= 0 = checaDist xs pq m 
-    |otherwise =  checaDist xs (atualizaPq x pq a m ) m 
+checaDist :: [Edge] -> Pqueue ->  Nome -> String -> [[String]] -> Pqueue         --atualiza a Pqueue com os vizinhos 
+checaDist [] pq _  _ _= pq
+checaDist (x:xs) pq m o l
+    |a >= b && b >= 0 = checaDist xs pq m o l
+    |otherwise =  checaDist xs (atualizaPq x pq a m o) m o l
     where   
-        a = (dist (snd x) pq m) + (distOrigem fst x pq)
-        b =  fst (snd(achaNo (nomeNo x) pq))
+        a = snd(dist (snd x) pq m l) + (distOrigem (fst x) pq)
+        b =  fst(snd(achaNo (fst x) pq))
         
-achaNo _ [] = ("",("",""))
+achaNo _ [] = ("",(0,("","")))
 achaNo n (h:t)
           | n == (nomeNo h) = h
           | otherwise = achaNo n t
           
           
-atualizaPq :: Edge -> Pqueue -> Weight -> Pqueue
-atualizaPq _ [] _ = []
-atualizaPq e (x:xs) w 
-    |fst e == fst x = (fst e,(snd (snd e),(v,m))) ++ atualizaPq e xs w
-    |otherwise = x ++ atualizaPq e xs w
+atualizaPq :: Edge -> Pqueue -> Weight -> String -> String -> Pqueue
+atualizaPq _ [] _ _ _= []
+atualizaPq e (x:xs) w m o 
+    |fst e == fst x = [(fst e,(w,(o,m)))] ++ atualizaPq e xs w m o
+    |otherwise = [x] ++ atualizaPq e xs w m o
 
-dist :: [Meio] -> Pqueue -> Nome -> Pqueue
-dist e pq m o= dist' e pq m  (m,0)
-dist' [] pq m  r = r
-dist' (x:xs) pq m  (_,0)
-    |fst x == "a-pe" = dist' xs pq m x
-    | m /= fst x = dist' xs pq m  (fst x,((snd x) + esperaBus fst x ))
-    |otherwise = dist' xs pq m x
-dist' (x:xs) pq m r
-    |fst x == "a-pe" = dist' xs pq m a 
-    | m /= fst x = dist' xs pq m b
-    |otherwise = dist' xs pq m a
+dist' :: [Meio] -> Pqueue -> Nome -> (Nome,Weight) -> [[String]] -> (Nome,Weight)
+dist :: [Meio] -> Pqueue -> Nome  -> [[String]] -> (Nome,Weight)
+dist e pq m l = dist' e pq m  (m,0) l
+dist' [] pq m  r _ = r
+dist' (x:xs) pq m  (_,0) l
+    |fst x == "a-pe" = dist' xs pq m x l
+    | m /= (fst x) = dist' xs pq m  (fst x,((snd x) + esperaBus l (fst x))) l
+    |otherwise = dist' xs pq m x l
+dist' (x:xs) pq m r l
+    |fst x == "a-pe" = dist' xs pq m a l
+    | m /= (fst x) = dist' xs pq m b l
+    |otherwise = dist' xs pq m a l
     where
         a =maisRapido r x
-        b =maisRapido r (fst x,((snd x) + esperaBus fst x ))
+        b =maisRapido r (fst x,((snd x) + (esperaBus l (fst x))))
         
-maisRapido :: Meio->Meio->Meio
+maisRapido :: Meio -> Meio -> Meio
 maisRapido a b  
     |snd a < snd b = a
     |otherwise = b
     
 esperaBus :: [[String]] -> String -> Double
+esperaBus [] _ = 0
 esperaBus (x:xs) s
-    |fst x == s = ((snd x)/2)
+    |(head x) == s = ((read (head(tail x)) :: Double )/2)
     |otherwise = esperaBus xs s
     
 distOrigem :: Nome -> Pqueue -> Weight
 distOrigem n pq = (fst(snd(achaNo n pq)))
+
+percorrePqueue :: Pqueue -> String -> String      --nao implementada
+percorrePqueue pq v = percorrePqueue' pq pq v ""
+percorrePqueue' pq (x:xs) v s 
+    |(fst x) == v = percorrePqueue' pq  
+    |otherwise = percorrePqueue' 
      
 type Graph = [Node]
 type Node =(Nome, [Edge])

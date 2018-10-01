@@ -6,19 +6,20 @@ main = do
     let a = (encontra (head $ head $ c) c) 
     let d = mapedTail a 
     let e = unico $ mapedHead c -- lista com o primeiro elemento de cada sublista, sem repeticao
+    let arestas = unico $ (e ++ (mapedHead $ mapedTail c))
     let f = unico $ mapedHead d
     let l = parseWords(head(tail b))
     let k = parseWords(head(tail(tail b)))
     let g = preencheGraph e c    
-    let h = criaPqueue e "a"
-    let r = menorCaminho g h "a" "c" l
+    let h = criaPqueue arestas "a"
+    let r = menorCaminho g h "a" "p" l
     mapM_ print(g)
     putStr(" \n \n")
     mapM_ print(r)
     putStr(" \n \n") 
-    mapM_ print(checaDist (snd (achaNoPartida "b" g)) h "a-pe" "a" l)
-    putStr(" \n \n") 
-    mapM_ print(achaNoPartida "b" g)
+    print(percorrePqueue r "p")
+    print(distOrigem "p" r)
+
 
     
 getLines :: IO [String]
@@ -81,7 +82,7 @@ criaPqueue :: [String] -> String -> Pqueue          --cria a fila de prioridade
 criaPqueue [] _ = []
 criaPqueue (x:xs) v 
     |x == v = (x,(0,("",""))):criaPqueue xs v
-    |otherwise = (x,(0,("",""))):criaPqueue xs v
+    |otherwise = (x,(read "Infinity",("",""))):criaPqueue xs v
 
 menorCaminho :: Graph ->Pqueue -> Nome -> Nome ->[[String]]-> Pqueue     
 menorCaminho g pq o d l = menorCaminho' g pq [] o "a-pe" d l
@@ -114,7 +115,7 @@ menorDist' (x:xs) v w
 checaDist :: [Edge] -> Pqueue ->  Nome -> String -> [[String]] -> Pqueue         --atualiza a Pqueue com os vizinhos, nao esta funcionando para alguns casos, tds funcoes pra baixo podem ser a cause
 checaDist [] pq _ _ _= pq
 checaDist (x:xs) pq m o l
-    |(snd a + (distOrigem o pq)) >= b && b > 0 = checaDist xs pq m o l
+    |(snd a + (distOrigem o pq)) >= b && b >= 0 = checaDist xs pq m o l
     |otherwise =  checaDist xs (atualizaPq x pq (snd a + (distOrigem o pq)) (fst a) o) m o l
     where   
         a = (dist (snd x) pq m l) 
@@ -125,6 +126,8 @@ achaNo n (h:t)
           | n == (nomeNo h) = h
           | otherwise = achaNo n t
           
+
+          
           
 atualizaPq :: Edge -> Pqueue -> Weight -> String -> String -> Pqueue
 atualizaPq _ [] _ _ _= []
@@ -132,9 +135,11 @@ atualizaPq e (x:xs) w m o
     |fst e == fst x = [(fst e,(w,(o,m)))] ++ atualizaPq e xs w m o
     |otherwise = [x] ++ atualizaPq e xs w m o
 
-dist' :: [Meio] -> Pqueue -> Nome -> (Nome,Weight) -> [[String]] -> (Nome,Weight)
+
 dist :: [Meio] -> Pqueue -> Nome  -> [[String]] -> (Nome,Weight)
 dist e pq m l = dist' e pq m  (m,0) l
+
+dist' :: [Meio] -> Pqueue -> Nome -> (Nome,Weight) -> [[String]] -> (Nome,Weight)
 dist' [] pq m  r _ = r
 dist' (x:xs) pq m  (_,0) l
     |fst x == "a-pe" = dist' xs pq m x l
@@ -162,12 +167,16 @@ esperaBus (x:xs) s
 distOrigem :: Nome -> Pqueue -> Weight
 distOrigem n pq = (fst(snd(achaNo n pq)))
 
-percorrePqueue :: Pqueue -> String -> String      --nao funciona
+percorrePqueue :: Pqueue -> String -> String    --nao funciona
 percorrePqueue pq v = percorrePqueue' pq pq v ""
-percorrePqueue' pq (x:xs) v s 
-    |(fst x) == v = percorrePqueue' pq  pq (fst $ snd $ snd x) (s ++ (snd $ snd $ snd x )++ (fst x))
+percorrePqueue' _ [] _ s = s
+percorrePqueue' pq (x:xs) v s
+    |fst x == v = percorrePqueue' pq pq (fst $ snd $ snd x) ((snd $ snd $ snd x) ++ " " ++ (fst x)++ " " ++ s )
     |otherwise = percorrePqueue' pq xs v s
+
      
+     
+    
 type Graph = [Node]
 type Node =(Nome, [Edge])
 type Edge = (Nome,[Meio]) 

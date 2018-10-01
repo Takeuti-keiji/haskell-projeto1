@@ -10,17 +10,16 @@ main = do
     let l = parseWords(head(tail b))
     let k = parseWords(head(tail(tail b)))
     let g = preencheGraph e c    
-    let h = criaPqueue e "f"
-    let r = menorCaminho g h "a" "f" l
-    print(k)
-    putStr(" \n \n") 
-    print(g)
+    let h = criaPqueue e "a"
+    let r = menorCaminho g h "a" "c" l
+    mapM_ print(g)
     putStr(" \n \n")
-    print(h)
+    mapM_ print(r)
     putStr(" \n \n") 
-    print(r)
-    print(percorrePqueue r "f")
-   
+    mapM_ print(checaDist (snd (achaNoPartida "b" g)) h "a-pe" "a" l)
+    putStr(" \n \n") 
+    mapM_ print(achaNoPartida "b" g)
+
     
 getLines :: IO [String]
 getLines = lines <$> getContents
@@ -82,14 +81,14 @@ criaPqueue :: [String] -> String -> Pqueue          --cria a fila de prioridade
 criaPqueue [] _ = []
 criaPqueue (x:xs) v 
     |x == v = (x,(0,("",""))):criaPqueue xs v
-    |otherwise = (x,(-1,("",""))):criaPqueue xs v
+    |otherwise = (x,(0,("",""))):criaPqueue xs v
 
 menorCaminho :: Graph ->Pqueue -> Nome -> Nome ->[[String]]-> Pqueue     
 menorCaminho g pq o d l = menorCaminho' g pq [] o "a-pe" d l
 
 menorCaminho' :: Graph -> Pqueue -> [Nome] -> Nome -> Nome -> Nome -> [[String]] -> Pqueue    -- acha o menor caminho recebe o grafo, a lista de prioridade inicializada, lista de visitados, um no , meio de transporte ate esse no e o destino
 menorCaminho' g pq v o m d l
-    |o == d = pq
+    |(elem d v) = pq
     |otherwise =
         let pq' =  checaDist (snd (achaNoPartida o g)) pq m o l--atualiza a Pqueue com os vizinhos de o
             v' = ([o'] ++ v)  --adiciona o aos visitados
@@ -98,7 +97,7 @@ menorCaminho' g pq v o m d l
             t = menorDist pq' v -- acha o proximo no com menor distancia
         in menorCaminho' g pq' v' o' m' d l
                
-menorDist :: Pqueue -> [Nome] -> (Nome,Spec)                      --acha o menor no nao visitado na fila de prioridade
+menorDist :: Pqueue -> [Nome] -> (Nome,Spec)                      --acha o menor no nao visitado na fila de prioridade, implementação falha
 menorDist pq v = menorDist' pq v ("",(0,("","")))
 
 menorDist' :: Pqueue -> [Nome] -> (Nome,Spec) -> (Nome,Spec) 
@@ -111,13 +110,14 @@ menorDist' (x:xs) v w
     |(fst(snd x) <  fst(snd w)) && (notElem (fst x) v) =  menorDist' xs v x
     |otherwise = menorDist' xs v w 
         
-checaDist :: [Edge] -> Pqueue ->  Nome -> String -> [[String]] -> Pqueue         --atualiza a Pqueue com os vizinhos 
-checaDist [] pq _  _ _= pq
+        
+checaDist :: [Edge] -> Pqueue ->  Nome -> String -> [[String]] -> Pqueue         --atualiza a Pqueue com os vizinhos, nao esta funcionando para alguns casos, tds funcoes pra baixo podem ser a cause
+checaDist [] pq _ _ _= pq
 checaDist (x:xs) pq m o l
-    |a >= b && b >= 0 = checaDist xs pq m o l
-    |otherwise =  checaDist xs (atualizaPq x pq a m o) m o l
+    |(snd a + (distOrigem o pq)) >= b && b > 0 = checaDist xs pq m o l
+    |otherwise =  checaDist xs (atualizaPq x pq (snd a + (distOrigem o pq)) (fst a) o) m o l
     where   
-        a = snd(dist (snd x) pq m l) + (distOrigem (fst x) pq)
+        a = (dist (snd x) pq m l) 
         b =  fst(snd(achaNo (fst x) pq))
         
 achaNo _ [] = ("",(0,("","")))
@@ -153,7 +153,7 @@ maisRapido a b
     |snd a < snd b = a
     |otherwise = b
     
-esperaBus :: [[String]] -> String -> Double
+esperaBus :: [[String]] -> String -> Double   --tempo de espera do bus, funciona
 esperaBus [] _ = 0
 esperaBus (x:xs) s
     |(head x) == s = ((read (head(tail x)) :: Double )/2)
@@ -162,7 +162,7 @@ esperaBus (x:xs) s
 distOrigem :: Nome -> Pqueue -> Weight
 distOrigem n pq = (fst(snd(achaNo n pq)))
 
-percorrePqueue :: Pqueue -> String -> String      --nao implementada
+percorrePqueue :: Pqueue -> String -> String      --nao funciona
 percorrePqueue pq v = percorrePqueue' pq pq v ""
 percorrePqueue' pq (x:xs) v s 
     |(fst x) == v = percorrePqueue' pq  pq (fst $ snd $ snd x) (s ++ (snd $ snd $ snd x )++ (fst x))

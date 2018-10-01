@@ -1,25 +1,22 @@
+--Nome:Lucas Keiji Takeuti RA:158160
+--Nome:Daniela Palumbo RA:166301
+
 
 main = do
-    contents <- getLines  --le a entrada como um bloco
-    let b = parseLines contents       -- cada linha uma string em uma lista      
-    let c = parseWords(head  b)       -- cada linha uma lista de string
-    let a = (encontra (head $ head $ c) c) 
-    let d = mapedTail a 
-    let e = unico $ mapedHead c -- lista com o primeiro elemento de cada sublista, sem repeticao
-    let arestas = unico $ (e ++ (mapedHead $ mapedTail c))
-    let f = unico $ mapedHead d
-    let l = parseWords(head(tail b))
-    let k = parseWords(head(tail(tail b)))
-    let g = preencheGraph e c    
-    let h = criaPqueue arestas "a"
-    let r = menorCaminho g h "a" "p" l
-    mapM_ print(g)
-    putStr(" \n \n")
-    mapM_ print(r)
-    putStr(" \n \n") 
-    print(percorrePqueue r "p")
-    print(distOrigem "p" r)
-
+    contents <- getLines                              --le a entrada como um bloco
+    let bloco = parseLines contents                   -- cada linha uma string em uma lista      
+    let b1 = parseWords(head  bloco)                  -- cada linha uma lista de string
+    let b2 = parseWords(head(tail bloco))
+    let b3 = parseWords(head(tail(tail bloco)))   
+    let fb1 = unico $ mapedHead b1                    -- lista com o primeiro elemento de cada sublista, sem repeticao
+    let arestas = unico $ (fb1 ++ (mapedHead $ mapedTail b1)) --todas as arestas
+    let inicio = head $ head $ b3                     --inicio trajeto 
+    let fim = head $ tail $ head $ b3                 --final
+    let g = preencheGraph fb1 b1                      --preenche o grafo
+    let pq = criaPqueue arestas inicio                --cria a fila de prioridade
+    let r = menorCaminho g pq inicio fim b2           --encontra o menor caminho          
+    putStrLn(dropWhile (==' ') (percorrePqueue r fim))  --imprime o caminho 
+    print(distOrigem fim r)  --imprime a distancia
 
     
 getLines :: IO [String]
@@ -98,7 +95,7 @@ menorCaminho' g pq v o m d l
             t = menorDist pq' v -- acha o proximo no com menor distancia
         in menorCaminho' g pq' v' o' m' d l
                
-menorDist :: Pqueue -> [Nome] -> (Nome,Spec)                      --acha o menor no nao visitado na fila de prioridade, implementação falha
+menorDist :: Pqueue -> [Nome] -> (Nome,Spec)                      --acha o menor no nao visitado na fila de prioridade
 menorDist pq v = menorDist' pq v ("",(0,("","")))
 
 menorDist' :: Pqueue -> [Nome] -> (Nome,Spec) -> (Nome,Spec) 
@@ -112,7 +109,7 @@ menorDist' (x:xs) v w
     |otherwise = menorDist' xs v w 
         
         
-checaDist :: [Edge] -> Pqueue ->  Nome -> String -> [[String]] -> Pqueue         --atualiza a Pqueue com os vizinhos, nao esta funcionando para alguns casos, tds funcoes pra baixo podem ser a cause
+checaDist :: [Edge] -> Pqueue ->  Nome -> String -> [[String]] -> Pqueue         --atualiza a Pqueue com os vizinhos
 checaDist [] pq _ _ _= pq
 checaDist (x:xs) pq m o l
     |(snd a + (distOrigem o pq)) >= b && b >= 0 = checaDist xs pq m o l
@@ -125,9 +122,6 @@ achaNo _ [] = ("",(0,("","")))
 achaNo n (h:t)
           | n == (nomeNo h) = h
           | otherwise = achaNo n t
-          
-
-          
           
 atualizaPq :: Edge -> Pqueue -> Weight -> String -> String -> Pqueue
 atualizaPq _ [] _ _ _= []
@@ -167,16 +161,13 @@ esperaBus (x:xs) s
 distOrigem :: Nome -> Pqueue -> Weight
 distOrigem n pq = (fst(snd(achaNo n pq)))
 
-percorrePqueue :: Pqueue -> String -> String    --nao funciona
+percorrePqueue :: Pqueue -> String -> String    
 percorrePqueue pq v = percorrePqueue' pq pq v ""
 percorrePqueue' _ [] _ s = s
 percorrePqueue' pq (x:xs) v s
-    |fst x == v = percorrePqueue' pq pq (fst $ snd $ snd x) ((snd $ snd $ snd x) ++ " " ++ (fst x)++ " " ++ s )
+    |fst x == v = percorrePqueue' pq pq (fst $ snd $ snd x) (" " ++ (snd $ snd $ snd x) ++ " " ++ (fst x) ++ s )
     |otherwise = percorrePqueue' pq xs v s
 
-     
-     
-    
 type Graph = [Node]
 type Node =(Nome, [Edge])
 type Edge = (Nome,[Meio]) 
